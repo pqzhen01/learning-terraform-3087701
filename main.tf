@@ -18,6 +18,21 @@ data "aws_vpc" "default" {
   default = true
 }
 
+resource "aws_instance" "web" {
+  ami                     = data.aws_ami.app_ami.id
+  instance_type           = var.instance_type
+
+  #this is to use the security group id defined directly
+  #vpc_security_group_ids = [aws_security_group.blog.id]
+
+  #this is to use the module to define the sg and sg rules
+  vpc_security_group_ids = [module.blog_sg.security_group_id]
+
+  tags = {
+    Name = "Learning Terraform"
+  }
+}
+
 resource "aws_security_group" "blog" {
   name = "blog"
   tags = {
@@ -25,6 +40,35 @@ resource "aws_security_group" "blog" {
   }
   vpc_id = data.aws_vpc.default.id
 }
+
+
+
+module "blog_sg" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "5.1.0"
+  name    = "blog_new"
+
+  vpc_id              = data.aws_vpc.default.id
+  ingress_rules       = ["http-80-tcp", "https-443-tcp]
+  ingress_cidr_blocks = ["0.0.0.0/0"}]
+
+  egress_rules = ["all-all"]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 resource "aws_security_group_rule" "blog_http_in" {
   type = "ingress"
@@ -56,12 +100,4 @@ resource "aws_security_group_rule" "blog_out" {
 }
 
 
-resource "aws_instance" "web" {
-  ami                    = data.aws_ami.app_ami.id
-  instance_type          = var.instance_type
-  vpc_security_group_ids = [aws_security_group.blog.id]
 
-  tags = {
-    Name = "Learning Terraform"
-  }
-}
